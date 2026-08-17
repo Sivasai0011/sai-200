@@ -1,0 +1,223 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>RoadVision AI – Intelligent Road Accident Prediction System</title>
+
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&family=Orbitron:wght@400;600;800;900&family=Rajdhani:wght@500;600;700&display=swap" rel="stylesheet">
+
+    <!-- FontAwesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+    <!-- Stylesheet -->
+    <link rel="stylesheet" href="style.css">
+
+    <!-- Dependencies -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@4.10.0/dist/tf.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
+</head>
+<body>
+
+    <!-- Animated Sci-Fi Loading Screen -->
+    <div id="loading-screen">
+        <div class="loader-spinner"></div>
+        <div class="loader-text">INITIALIZING ROADVISION AI ENGINE</div>
+        <div style="font-family: 'Rajdhani'; color: #8d99ae; font-size: 13px;">Loading Neural Weights & 3D Smart City Grid...</div>
+    </div>
+
+    <!-- Background 3D WebGL Canvas -->
+    <canvas id="three-canvas"></canvas>
+
+    <!-- Main Futuristic HUD Grid -->
+    <div class="hud-grid">
+
+        <!-- Top Header Telemetry Bar -->
+        <header class="hud-header glass-panel">
+            <div class="brand-container">
+                <div class="brand-logo"><i class="fa-solid fa-brain"></i></div>
+                <div>
+                    <div class="brand-title">ROADVISION AI</div>
+                    <div class="brand-badge">NVIDIA DRIVE ARCHITECTURE</div>
+                </div>
+            </div>
+
+            <div class="header-telemetry">
+                <div class="telemetry-pill">
+                    <span class="telemetry-label">FPS</span>
+                    <span class="telemetry-value green" id="valFps">60</span>
+                </div>
+                <div class="telemetry-pill">
+                    <span class="telemetry-label">Active Vehicles</span>
+                    <span class="telemetry-value val-active-vehicles">24</span>
+                </div>
+                <div class="telemetry-pill">
+                    <span class="telemetry-label">Road Safety Index</span>
+                    <span class="telemetry-value green val-safety-index">94.2%</span>
+                </div>
+                <div class="telemetry-pill">
+                    <span class="telemetry-label">AI Confidence</span>
+                    <span class="telemetry-value val-confidence-score">98.4%</span>
+                </div>
+                <div class="telemetry-pill">
+                    <span class="telemetry-label">Weather</span>
+                    <span class="telemetry-value" id="valWeatherDisplay">CLEAR</span>
+                </div>
+            </div>
+
+            <div class="header-actions">
+                <button class="hud-btn" id="btnWeatherToggle"><i class="fa-solid fa-cloud-sun"></i> Weather</button>
+                <button class="hud-btn" id="btnDayNightToggle"><i class="fa-solid fa-moon"></i> Day/Night</button>
+                <button class="hud-btn" id="btnVoiceToggle"><i class="fa-solid fa-volume-high"></i> Voice AI</button>
+                <button class="hud-btn danger" id="btnEmergencyAlarm"><i class="fa-solid fa-bell"></i> DISPATCH</button>
+            </div>
+        </header>
+
+        <!-- Left HUD Panel - Vehicle Inspector -->
+        <aside class="hud-left-panel glass-panel">
+            <div class="panel-header">
+                <div class="panel-title"><i class="fa-solid fa-microchip"></i> VEHICLE TELEMETRY</div>
+                <span class="badge badge-info" id="inspectorVehicleId">NONE SELECTED</span>
+            </div>
+
+            <div class="inspector-card">
+                <div style="font-family: 'Rajdhani'; font-weight: 700; font-size: 14px; color: var(--neon-cyan);">
+                    <i class="fa-solid fa-car"></i> Target Vehicle Inspection
+                </div>
+                <p style="font-size: 12px; color: var(--text-muted);" id="inspectorDescription">
+                    Click any moving vehicle in the 3D smart city view to lock camera and display real-time telemetry.
+                </p>
+
+                <div class="inspector-stat-grid">
+                    <div class="stat-box">
+                        <div class="stat-box-title">Vehicle Type</div>
+                        <div class="stat-box-val" id="statType">---</div>
+                    </div>
+                    <div class="stat-box">
+                        <div class="stat-box-title">Live Speed</div>
+                        <div class="stat-box-val" id="statSpeed" style="color: var(--neon-cyan)">0 km/h</div>
+                    </div>
+                    <div class="stat-box">
+                        <div class="stat-box-title">Collision Risk</div>
+                        <div class="stat-box-val" id="statRisk" style="color: var(--neon-green)">0%</div>
+                    </div>
+                    <div class="stat-box">
+                        <div class="stat-box-title">Driving Behavior</div>
+                        <div class="stat-box-val" id="statBehavior">Nominal</div>
+                    </div>
+                </div>
+
+                <div style="margin-top: 6px;">
+                    <div style="font-size: 11px; color: var(--text-muted); margin-bottom: 4px;">AI Safety Recommendation:</div>
+                    <div class="feed-recommendation" id="inspectorRecommendation">
+                        <i class="fa-solid fa-shield"></i> Select vehicle to initiate deep neural diagnostics.
+                    </div>
+                </div>
+
+                <div style="display: flex; gap: 8px; margin-top: 8px;">
+                    <button class="hud-btn" id="btnFollowCar" style="flex: 1;"><i class="fa-solid fa-video"></i> Follow Cam</button>
+                    <button class="hud-btn" id="btnTriggerAnomaly" style="flex: 1;"><i class="fa-solid fa-bolt"></i> Sim Anomaly</button>
+                </div>
+            </div>
+
+            <!-- Quick Search by Vehicle ID -->
+            <div class="inspector-card">
+                <div class="panel-title" style="font-size: 12px;"><i class="fa-solid fa-magnifying-glass"></i> VEHICLE SEARCH</div>
+                <div style="display: flex; gap: 8px;">
+                    <input type="text" id="inputSearchId" placeholder="e.g. V-102" style="flex: 1; background: rgba(0,0,0,0.5); border: 1px solid var(--border-cyan); padding: 8px; border-radius: 6px; color: white; font-family: 'Rajdhani';">
+                    <button class="hud-btn" id="btnSearchVehicle">Search</button>
+                </div>
+            </div>
+        </aside>
+
+        <!-- Right HUD Panel - Real-Time AI Threat Feed & Radar -->
+        <aside class="hud-right-panel glass-panel">
+            <div class="panel-header">
+                <div class="panel-title"><i class="fa-solid fa-radar"></i> ACCIDENT HOTSPOT MAP</div>
+                <span class="badge badge-warning">LIVE RADAR</span>
+            </div>
+
+            <!-- 2D Radar Canvas -->
+            <canvas id="canvasHeatmap" width="320" height="180"></canvas>
+
+            <div class="panel-header" style="margin-top: 10px;">
+                <div class="panel-title"><i class="fa-solid fa-triangle-exclamation"></i> AI PREDICTION FEED</div>
+                <div style="display: flex; gap: 4px;">
+                    <button class="badge badge-info" id="filterAll" style="cursor: pointer;">ALL</button>
+                    <button class="badge badge-danger" id="filterCritical" style="cursor: pointer;">CRITICAL</button>
+                </div>
+            </div>
+
+            <!-- Incident Feed Scroll Box -->
+            <div class="incident-feed-container" id="incidentFeedContainer">
+                <div class="feed-empty"><i class="fa-solid fa-shield-halved"></i> Initializing sector threat monitoring...</div>
+            </div>
+        </aside>
+
+        <!-- Bottom Floating Control Dock -->
+        <footer class="hud-bottom-dock glass-panel">
+            <div class="dock-controls">
+                <button class="hud-btn active" id="btnPauseSim"><i class="fa-solid fa-pause"></i> Pause</button>
+                
+                <div class="slider-group">
+                    <span>Density:</span>
+                    <input type="range" id="sliderDensity" min="10" max="50" value="24">
+                </div>
+
+                <div class="slider-group">
+                    <span>Speed:</span>
+                    <input type="range" id="sliderSpeed" min="0.5" max="3.0" step="0.1" value="1.0">
+                </div>
+
+                <button class="hud-btn active" id="btnToggleOverlays"><i class="fa-solid fa-eye"></i> 3D AI Overlays</button>
+            </div>
+
+            <div class="dock-controls">
+                <button class="hud-btn" id="btnDroneMode"><i class="fa-solid fa-plane"></i> Drone View</button>
+                <button class="hud-btn" id="btnCCTVModal"><i class="fa-solid fa-border-all"></i> CCTV Matrix</button>
+                <button class="hud-btn" id="btnAnalyticsModal"><i class="fa-solid fa-chart-pie"></i> Analytics</button>
+                <button class="hud-btn" id="btnExportPDF"><i class="fa-solid fa-file-pdf"></i> Export Report</button>
+            </div>
+        </footer>
+
+    </div>
+
+    <!-- Analytics & Charts Modal Popup -->
+    <div class="modal-overlay" id="modalAnalytics">
+        <div class="modal-container glass-panel">
+            <div class="modal-header">
+                <div class="modal-title"><i class="fa-solid fa-chart-line"></i> SMART CITY AI ANALYTICS DASHBOARD</div>
+                <button class="modal-close" id="btnCloseAnalytics">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div class="chart-wrapper">
+                    <div style="font-family: 'Orbitron'; font-size: 13px; margin-bottom: 8px;">AI Incident Prediction Timeline</div>
+                    <canvas id="chartPredictionTimeline"></canvas>
+                </div>
+                <div class="chart-wrapper">
+                    <div style="font-family: 'Orbitron'; font-size: 13px; margin-bottom: 8px;">Speed Distribution Analytics</div>
+                    <canvas id="chartSpeedAnalytics"></canvas>
+                </div>
+                <div class="chart-wrapper" style="grid-column: 1 / -1; height: 220px;">
+                    <div style="font-family: 'Orbitron'; font-size: 13px; margin-bottom: 8px;">City Sector Risk Distribution</div>
+                    <canvas id="chartTrafficGraph"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- App Main Script & Modules -->
+    <script src="audio.js"></script>
+    <script src="city.js"></script>
+    <script src="vehicles.js"></script>
+    <script src="ai.js"></script>
+    <script src="dashboard.js"></script>
+    <script src="script.js"></script>
+</body>
+</html>
